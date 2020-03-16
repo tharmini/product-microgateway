@@ -17,7 +17,9 @@
 import ballerina/auth;
 import ballerina/jwt;
 import ballerina/runtime;
-
+import ballerina/stringutils;
+import ballerina/config;
+import ballerina/io;
 
 # Represents inbound JWT auth provider.
 #
@@ -58,6 +60,17 @@ public type JwtAuthProvider object {
             string? jti = "";
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
             runtime:AuthenticationContext? authContext = invocationContext?.authenticationContext;
+            runtime:InvocationContext edited_invocationContext=doMappingContext(invocationContext);
+            runtime:Principal? principal2 = edited_invocationContext["principal"];
+            runtime:Principal? principal = invocationContext["principal"];
+            if (principal is runtime:Principal && principal2 is runtime:Principal) {
+                printDebug( edited_invocationContext["principal"].toString(), " invocationContext[principa]**************************");
+                principal=principal2;
+             }
+            printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
+            printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContextinvocationContext[principa]**************************");
+            printDebug(edited_invocationContext.toString(), "edited_invocationContext****************************");
+
             if (authContext is runtime:AuthenticationContext) {
                 string? jwtToken = authContext?.authToken;
                 if (jwtToken is string) {
@@ -140,4 +153,43 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
     }
     setErrorMessageToInvocationContext(API_AUTH_FORBIDDEN);
     return prepareError("Failed to decode the JWT.");
+}
+
+
+
+public function doMappingContext(runtime:InvocationContext invocationContext) returns @tainted runtime:InvocationContext {
+    //decode jwt
+    string? payloadissuer=invocationContext["principal"]["userId"];
+    if(payloadissuer is  string) {
+        string[] result = stringutils:split(payloadissuer, ":");
+        payloadissuer=result[0].concat(":",result[1],":",result[2]);
+        printDebug(payloadissuer, "payloadissuer***************************************.");
+    }
+    map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
+        if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0) {
+            foreach map<anydata> jwtIssuer in jwtIssuers {
+                   string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
+                   if (issuer==payloadissuer){
+                        map<anydata> claims = <map<anydata>>jwtIssuer["claims"];
+                        printDebug(claims.toString(), "claims.........................");
+                        printDebug(claims.length().toString(), "claims length.........................");
+                        if (claims.length() > 0){
+                            string[] keys = claims.keys();
+                            foreach string key in keys {
+                                string claimvalue = claims[key].toString(); //scps
+                                map<any>? customClaims = invocationContext["principal"]["claims"];
+                                if(customClaims is map<anydata>) {
+                                io:println("customClaims is mapped.........................");
+                                    if(customClaims.hasKey(claimvalue)) {
+                                        customClaims[key] = customClaims[claimvalue];
+                                        io:println(customClaims[key].toString(),"customClaims[key].........................");
+                                        anydata removedElement = customClaims.remove(claimvalue);
+                                     }
+                                }
+                            }
+                        }
+                   }
+            }
+        }
+     return invocationContext;
 }
