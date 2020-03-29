@@ -58,27 +58,33 @@ public type JwtAuthProvider object {
 
             boolean isBlacklisted = false;
             string? jti = "";
-            printDebug( credential.toString(), " credential**************************");
-
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
             runtime:AuthenticationContext? authContext = invocationContext?.authenticationContext;
-
-            printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
-            printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[Scopes]**************************");
-            runtime:InvocationContext edited_invocationContext=doMappingContext(invocationContext);
-            runtime:Principal? principal2 = edited_invocationContext["principal"];
-            runtime:Principal? principal = invocationContext["principal"];
-            if (principal is runtime:Principal && principal2 is runtime:Principal) {
-                printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContext[principa]**************************");
-                principal=principal2;
-             }
-            printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
-            printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContextinvocationContext[principa]**************************");
-            printDebug(edited_invocationContext.toString(), "edited_invocationContext****************************");
+            printDebug( invocationContext.toString(), " invocationContext**************************");
 
             if (authContext is runtime:AuthenticationContext) {
                 string? jwtToken = authContext?.authToken;
                 if (jwtToken is string) {
+                    (jwt:JwtPayload | error) payload = getDecodedJWTPayload(jwtToken);
+                    map<any>? customClaims = invocationContext["principal"]["claims"];
+                    printDebug( customClaims.toString(), " customClaims**************************");
+
+                    if(customClaims is map<anydata> && customClaims.hasKey("scope")){
+                      printDebug( customClaims["scope"].toString(), " scope**************************");
+                      putScopeValue(customClaims["scope"],invocationContext);
+
+
+
+                    }
+                    else if(payload is jwt:JwtPayload ){
+                        printDebug( payload.toString(), " payload**************************");
+                        runtime:InvocationContext edited_invocationContext=doMappingContext(invocationContext,payload);
+
+                        printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
+                        printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContextinvocationContext[principa]**************************");
+                        printDebug(edited_invocationContext.toString(), "edited_invocationContext****************************");
+                    }
+
                     boolean isGRPC = invocationContext.attributes.hasKey(IS_GRPC);
                     //Start a new child span for the span.
                     int | error | () spanIdCache = startSpan(JWT_CACHE);
@@ -118,7 +124,6 @@ public type JwtAuthProvider object {
                         return validateSubscriptions(jwtToken, cachedJwt.jwtPayload, self.subscriptionValEnabled, isGRPC);
                     }
                     printDebug(KEY_JWT_AUTH_PROVIDER, "jwt not found in the jwt cache");
-                    (jwt:JwtPayload | error) payload = getDecodedJWTPayload(jwtToken);
                     if (payload is jwt:JwtPayload) {
                         return validateSubscriptions(jwtToken, payload, self.subscriptionValEnabled, isGRPC);
                     }
@@ -162,14 +167,14 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
 
 
 
-public function doMappingContext(runtime:InvocationContext invocationContext) returns @tainted runtime:InvocationContext {
-    //decode jwt
-    string? payloadissuer=invocationContext["principal"]["userId"];
-    if(payloadissuer is  string) {
-        string[] result = stringutils:split(payloadissuer, ":");
-        payloadissuer=result[0].concat(":",result[1],":",result[2]);
-    }
+public function doMappingContext(runtime:InvocationContext invocationContext,jwt:JwtPayload payload) returns @tainted runtime:InvocationContext {
 
+
+
+      string payloadissuer=payload["iss"].toString();
+
+
+    printDebug( payloadissuer.toString(), " payloadissuer**************************");
     map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
         if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0) {
             foreach map<anydata> jwtIssuer in jwtIssuers {
@@ -192,12 +197,8 @@ public function doMappingContext(runtime:InvocationContext invocationContext) re
                                        // string[]? scopes =  <string[]> customClaims[claimvalue];
 
                                         if(key == "scope" ){
-                                          string[]? scopes =  stringutils:split(customClaims[claimvalue].toString(), " ");
-                                          printDebug( scopes.toString(), " scopes**************************");
-                                          if(scopes is string[]){
-                                          invocationContext["principal"]["scopes"] = scopes;
-                                          printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[principal][scopes]**************************");
-                                          }
+                                        putScopeValue(customClaims["scope"],invocationContext);
+
                                         }
                                         //else if( key == "scope" ){
                                         //any scopes = invocationContext["principal"]["claims"]["scope"];
@@ -216,4 +217,13 @@ public function doMappingContext(runtime:InvocationContext invocationContext) re
             }
         }
      return invocationContext;
+}
+
+public function putScopeValue(anydata scope,runtime:InvocationContext invocationContext){
+ string[]? scopes =  stringutils:split(scope.toString(), " ");
+  printDebug( scopes.toString(), " scopes**************************");
+  if(scopes is string[]){
+  invocationContext["principal"]["scopes"] = scopes;
+  printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[principal][scopes]**************************");
+  }
 }
