@@ -19,7 +19,7 @@ import ballerina/jwt;
 import ballerina/runtime;
 import ballerina/stringutils;
 import ballerina/config;
-import ballerina/io;
+
 
 # Represents inbound JWT auth provider.
 #
@@ -58,13 +58,18 @@ public type JwtAuthProvider object {
 
             boolean isBlacklisted = false;
             string? jti = "";
+            printDebug( credential.toString(), " credential**************************");
+
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
             runtime:AuthenticationContext? authContext = invocationContext?.authenticationContext;
+
+            printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
+            printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[Scopes]**************************");
             runtime:InvocationContext edited_invocationContext=doMappingContext(invocationContext);
             runtime:Principal? principal2 = edited_invocationContext["principal"];
             runtime:Principal? principal = invocationContext["principal"];
             if (principal is runtime:Principal && principal2 is runtime:Principal) {
-                printDebug( edited_invocationContext["principal"].toString(), " invocationContext[principa]**************************");
+                printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContext[principa]**************************");
                 principal=principal2;
              }
             printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
@@ -111,7 +116,7 @@ public type JwtAuthProvider object {
                             printDebug(KEY_JWT_AUTH_PROVIDER, "jti claim not found in the jwt");
                         }
                         return validateSubscriptions(jwtToken, cachedJwt.jwtPayload, self.subscriptionValEnabled, isGRPC);
-                    } 
+                    }
                     printDebug(KEY_JWT_AUTH_PROVIDER, "jwt not found in the jwt cache");
                     (jwt:JwtPayload | error) payload = getDecodedJWTPayload(jwtToken);
                     if (payload is jwt:JwtPayload) {
@@ -127,7 +132,7 @@ public type JwtAuthProvider object {
     }
 };
 
-public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, boolean subscriptionValEnabled, boolean isGRPC) 
+public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, boolean subscriptionValEnabled, boolean isGRPC)
         returns @tainted (boolean | auth:Error) {
     boolean subscriptionValidated = false;
     json subscribedAPIList = [];
@@ -146,7 +151,7 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
         if (subscriptionValidated || !subscriptionValEnabled || isGRPC) {
             printDebug(KEY_JWT_AUTH_PROVIDER, "Subscriptions validation passed.");
             return true;
-        } else { 
+        } else {
             setErrorMessageToInvocationContext(API_AUTH_FORBIDDEN);
             return prepareError("Subscriptions validation failed.");
         }
@@ -163,31 +168,50 @@ public function doMappingContext(runtime:InvocationContext invocationContext) re
     if(payloadissuer is  string) {
         string[] result = stringutils:split(payloadissuer, ":");
         payloadissuer=result[0].concat(":",result[1],":",result[2]);
-        printDebug(payloadissuer, "payloadissuer***************************************.");
     }
+
     map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
         if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0) {
             foreach map<anydata> jwtIssuer in jwtIssuers {
+
                    string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
+                   //string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
                    if (issuer==payloadissuer){
+                        //var class = loadMappingClass(className);
                         map<anydata> claims = <map<anydata>>jwtIssuer["claims"];
-                        printDebug(claims.toString(), "claims.........................");
-                        printDebug(claims.length().toString(), "claims length.........................");
                         if (claims.length() > 0){
                             string[] keys = claims.keys();
                             foreach string key in keys {
-                                string claimvalue = claims[key].toString(); //scps
+                                string claimvalue = claims[key].toString();
                                 map<any>? customClaims = invocationContext["principal"]["claims"];
+                                printDebug( customClaims.toString(), " customClaims**************************");
                                 if(customClaims is map<anydata>) {
-                                io:println("customClaims is mapped.........................");
-                                    if(customClaims.hasKey(claimvalue)) {
-                                        customClaims[key] = customClaims[claimvalue];
-                                        io:println(customClaims[key].toString(),"customClaims[key].........................");
+                                    if(customClaims.hasKey(claimvalue) ) {
+                                        invocationContext["principal"]["claims"][key] = customClaims[claimvalue];
+                                        printDebug( invocationContext["principal"]["claims"][key].toString(), " invocationContext[principal][claims][key]**************************");
+                                       // string[]? scopes =  <string[]> customClaims[claimvalue];
+
+                                        if(key == "scope" ){
+                                          string[]? scopes =  stringutils:split(customClaims[claimvalue].toString(), " ");
+                                          printDebug( scopes.toString(), " scopes**************************");
+                                          if(scopes is string[]){
+                                          invocationContext["principal"]["scopes"] = scopes;
+                                          printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[principal][scopes]**************************");
+                                          }
+                                        }
+                                        //else if( key == "scope" ){
+                                        //any scopes = invocationContext["principal"]["claims"]["scope"];
+                                        //invocationContext["principal"]["scopes"] =  transformJWT(scopes);
+                                        //}
                                         anydata removedElement = customClaims.remove(claimvalue);
                                      }
                                 }
                             }
                         }
+
+
+
+
                    }
             }
         }
