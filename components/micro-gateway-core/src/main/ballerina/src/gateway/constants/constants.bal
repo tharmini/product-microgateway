@@ -267,6 +267,7 @@ public const string REMOVE_AUTH_HEADER_FROM_OUT_MESSAGE = "removeAuthHeaderFromO
 
 public const string JWT_INSTANCE_ID = "jwtTokenConfig";
 public const string ISSUER = "issuer";
+public const string ISSUER_CLASSNAME="className";
 public const string AUDIENCE = "audience";
 public const string CERTIFICATE_ALIAS = "certificateAlias";
 public const string TRUST_STORE_PATH = "trustStorePath";

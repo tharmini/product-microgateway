@@ -168,31 +168,35 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
             foreach map<anydata> jwtIssuer in jwtIssuers {
                    string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
                    if (issuer==payloadissuer){
-                        //string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
-                        if(customClaims.hasKey("scope") && !jwtIssuer.hasKey("className")){
-                            putScopeValue(customClaims["scope"],invocationContext);
+                        string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
+                        if(customClaims.hasKey("scope") ){
+                            if(!jwtIssuer.hasKey("className")){
+                                putScopeValue(customClaims["scope"],invocationContext);
+                            }
+                            else{
+                            printDebug( className.toString(), " className**************************");
+                            }
+
 
                         }
-                        else if(!customClaims.hasKey("scope") && !jwtIssuer.hasKey("className")){
+                        else if(!customClaims.hasKey("scope")  ){
                         //var class = loadMappingClass(className);
                             map<anydata> claims = <map<anydata>>jwtIssuer["claims"];
                             if (claims.length() > 0){
                                     string claimvalue = claims["scope"].toString();
+                                    if(!jwtIssuer.hasKey("className")){
                                     customClaims["scope"]=customClaims[claimvalue];
                                     printDebug( customClaims.toString(), " customClaims**************************");
                                     putScopeValue(customClaims[claimvalue],invocationContext);
                                     anydata removedElement = customClaims.remove(claimvalue);
                                 printDebug( invocationContext["principal"]["claims"]["scope"].toString(), " invocationContext[principal][claims][key]**************************");
+                               }
+                               else{
+                                printDebug( className.toString(), " className**************************");
+                               }
                              }
 
                          }
-
-                         if(jwtIssuer.hasKey("className")){
-                              string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
-                              printDebug( className.toString(), " className**************************");
-
-                             }
-
                             }
                         }
                        }
