@@ -69,11 +69,10 @@ public type JwtAuthProvider object {
 
                     if(payload is jwt:JwtPayload ){
                         printDebug( payload.toString(), " payload**************************");
-                        runtime:InvocationContext edited_invocationContext=doMappingContext(invocationContext,payload);
+                        doMappingContext(invocationContext,payload);
 
-                        printDebug( invocationContext["principal"].toString(), " invocationContext[principa]**************************");
-                        printDebug( edited_invocationContext["principal"].toString(), " edited_invocationContextinvocationContext[principa]**************************");
-                        printDebug(edited_invocationContext.toString(), "edited_invocationContext****************************");
+                        printDebug( invocationContext["principal"].toString(), " edited_invocationContextinvocationContext[principa]**************************");
+                        printDebug(invocationContext.toString(), "edited_invocationContext****************************");
                     }
 
                     boolean isGRPC = invocationContext.attributes.hasKey(IS_GRPC);
@@ -158,51 +157,48 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
 
 
 
-public function doMappingContext(runtime:InvocationContext invocationContext,jwt:JwtPayload payload) returns @tainted runtime:InvocationContext {
-      string payloadissuer=payload["iss"].toString();
-      map<any>? customClaims = invocationContext["principal"]["claims"];
+public function doMappingContext(runtime:InvocationContext invocationContext,jwt:JwtPayload payload) {
+    string payloadissuer=payload["iss"].toString();
+    map<any>? customClaims = invocationContext["principal"]["claims"];
+    map<any>? invocationvalue = invocationContext;
 
     printDebug( payloadissuer.toString(), " payloadissuer**************************");
     map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
-        if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0 && customClaims is map<any>) {
-            foreach map<anydata> jwtIssuer in jwtIssuers {
-                   string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
-                   if (issuer==payloadissuer){
-                        string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
-                        if(customClaims.hasKey("scope") ){
-                            if(!jwtIssuer.hasKey("className")){
-                                putScopeValue(customClaims["scope"],invocationContext);
+    if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0 && customClaims is map<any>) {
+        foreach map<anydata> jwtIssuer in jwtIssuers {
+           string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
+           if (issuer==payloadissuer){
+                string className=getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
+                map<anydata> claims = <map<anydata>>jwtIssuer["claims"];
+                if (claims.length() > 0){
+                    string[] keys = claims.keys();
+                    foreach string key in keys {
+                        printDebug( key.toString(), " key**************************");
+                        string claimvalue = claims[key].toString();
+                        if(customClaims is map<anydata>) {
+                            if(customClaims.hasKey(claimvalue) ) {
+                                customClaims[key] = customClaims[claimvalue];
+                                printDebug( customClaims[key].toString(), " customClaims[key]**************************");
+                                if(key == "scope" && !jwtIssuer.hasKey("className") ){
+                                    putScopeValue(customClaims["scope"],invocationContext);
+                                    printDebug( customClaims["scope"].toString(), " customClaims[scope]**************************");
+                                }
+                                anydata removedElement = customClaims.remove(claimvalue);
                             }
-                            else{
-                            printDebug( className.toString(), " className**************************");
-                            }
-
-
-                        }
-                        else if(!customClaims.hasKey("scope")  ){
-                        //var class = loadMappingClass(className);
-                            map<anydata> claims = <map<anydata>>jwtIssuer["claims"];
-                            if (claims.length() > 0){
-                                    string claimvalue = claims["scope"].toString();
-                                    if(!jwtIssuer.hasKey("className")){
-                                    customClaims["scope"]=customClaims[claimvalue];
-                                    printDebug( customClaims.toString(), " customClaims**************************");
-                                    putScopeValue(customClaims[claimvalue],invocationContext);
-                                    any removedElement = customClaims.remove(claimvalue);
-                                printDebug( invocationContext["principal"]["claims"]["scope"].toString(), " invocationContext[principal][claims][key]**************************");
-                               }
-                               else{
-                                printDebug( className.toString(), " className**************************");
-                               }
-                             }
-
                          }
-                            }
-                        }
-                       }
+                    }
+                }
+                if(jwtIssuer.hasKey("className") && invocationvalue is map<any>){
+                    //invocationContext = transformJWT(invocationvalue);
+                    //putScopeValue(invocationContext["principal"]["claims"]["scope"],invocationContext);
+                    printDebug("invocationvalue************************************", invocationvalue.toString());
+                }
+           }
 
-     return invocationContext;
+        }
+     }
 }
+
 
 public function putScopeValue(any scope,runtime:InvocationContext invocationContext){
   if(scope is string && scope != ""){
