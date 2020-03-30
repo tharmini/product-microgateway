@@ -164,7 +164,7 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
 
     printDebug( payloadissuer.toString(), " payloadissuer**************************");
     map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
-        if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0 && customClaims is map<anydata>) {
+        if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0 && customClaims is map<any>) {
             foreach map<anydata> jwtIssuer in jwtIssuers {
                    string issuer=getDefaultStringValue(jwtIssuer[ISSUER], DEFAULT_JWT_ISSUER);
                    if (issuer==payloadissuer){
@@ -188,7 +188,7 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
                                     customClaims["scope"]=customClaims[claimvalue];
                                     printDebug( customClaims.toString(), " customClaims**************************");
                                     putScopeValue(customClaims[claimvalue],invocationContext);
-                                    anydata removedElement = customClaims.remove(claimvalue);
+                                    any removedElement = customClaims.remove(claimvalue);
                                 printDebug( invocationContext["principal"]["claims"]["scope"].toString(), " invocationContext[principal][claims][key]**************************");
                                }
                                else{
@@ -204,11 +204,13 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
      return invocationContext;
 }
 
-public function putScopeValue(anydata scope,runtime:InvocationContext invocationContext){
- string[]? scopes =  stringutils:split(scope.toString(), " ");
+public function putScopeValue(any scope,runtime:InvocationContext invocationContext){
+  if(scope is string && scope != ""){
+  string[]? scopes =  stringutils:split(scope.toString(), " ");
   printDebug( scopes.toString(), " scopes**************************");
   if(scopes is string[]){
   invocationContext["principal"]["scopes"] = scopes;
   printDebug( invocationContext["principal"]["scopes"].toString(), " invocationContext[principal][scopes]**************************");
+  }
   }
 }
