@@ -63,7 +63,10 @@ public type JwtAuthProvider object {
                 if (jwtToken is string) {
                     (jwt:JwtPayload | error) payload = getDecodedJWTPayload(jwtToken);
                     if(payload is jwt:JwtPayload ){
-                        doMappingContext(invocationContext,payload);
+                        var result = doMappingContext(invocationContext,payload);
+                        if (result is auth:Error){
+                               return result;
+                        }
                     }
                     boolean isGRPC = invocationContext.attributes.hasKey(IS_GRPC);
                     //Start a new child span for the span.
@@ -145,7 +148,7 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
     return prepareError("Failed to decode the JWT.");
 }
 
-public function doMappingContext(runtime:InvocationContext invocationContext,jwt:JwtPayload payload) {
+public function doMappingContext(runtime:InvocationContext invocationContext,jwt:JwtPayload payload) returns @tainted (auth:Error)? {
     string payloadissuer=payload["iss"].toString();
     map<any>? customClaims = invocationContext["principal"]["claims"];
     map<any>? invocationvalue = invocationContext;
@@ -164,7 +167,10 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
                             if (customClaims.hasKey(claimvalue) ) {
                                 customClaims[key] = customClaims[claimvalue];
                                 if (key == "scope" && !jwtIssuer.hasKey("className") ) {
-                                    putScopeValue(customClaims["scope"],invocationContext);
+                                   var result = putScopeValue(customClaims["scope"],invocationContext);
+                                   if (result is auth:Error){
+                                       return result;
+                                   }
                                 }
                                 anydata removedElement = customClaims.remove(claimvalue);
                             }
@@ -177,18 +183,26 @@ public function doMappingContext(runtime:InvocationContext invocationContext,jwt
                     if (customClaimsEdited is map<any>) {
                         invocationContext["principal"]["claims"]= customClaimsEdited;
                     }
-                    putScopeValue(invocationContext["principal"]["claims"]["scope"],invocationContext);
+                    var result = putScopeValue(invocationContext["principal"]["claims"]["scope"],invocationContext);
+                    if (result is auth:Error) {
+                        return result;
+                    }
                 }
            }
         }
      }
 }
 
-public function putScopeValue(any scope,runtime:InvocationContext invocationContext){
+public function putScopeValue(any scope,runtime:InvocationContext invocationContext) returns @tainted (auth:Error)? {
     if (scope is string && scope != "") {
         string[]? scopes =  stringutils:split(scope.toString(), " ");
         if (scopes is string[]) {
             invocationContext["principal"]["scopes"] = scopes;
+        } else {
+            return prepareError("Scope cannot be change to string array format");
         }
+    } else {
+        return prepareError("Scope is not a string format.");
     }
 }
+
