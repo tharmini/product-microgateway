@@ -16,7 +16,6 @@
 
 package org.wso2.micro.gateway.jwttransformer;
 
-
 import org.ballerinalang.jvm.values.MapValue;
 
 /**
@@ -24,9 +23,10 @@ import org.ballerinalang.jvm.values.MapValue;
  */
 public interface JWTTransformer {
 
-
-
-     MapValue transformJWT(MapValue scopes);
-
-
+    /**
+     *  Transform the custom claims  into required format.
+     * @param jwtClaims jwtClaims from given JWT
+     * @return transformed JWT Claims
+     */
+    MapValue transformJWT(MapValue jwtClaims);
 }

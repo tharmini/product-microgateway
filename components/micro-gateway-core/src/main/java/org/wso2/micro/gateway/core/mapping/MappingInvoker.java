@@ -23,28 +23,26 @@ import org.wso2.micro.gateway.jwttransformer.JWTTransformer;
 
 
 /**
- * This class Class to dynamically invoke the transformer
+ * This class Class to dynamically invoke the transformer.
  */
 public class MappingInvoker {
 
     private static final Logger log = LoggerFactory.getLogger("ballerina");
-    private  static JWTTransformer jwtTransformer;
+    private static JWTTransformer jwtTransformer;
 
     public static String loadMappingClass(String className) {
         try {
-
             Class mappingClass = MappingInvoker.class.getClassLoader().loadClass(className);
-             jwtTransformer = (JWTTransformer) mappingClass.newInstance();
-             return className;
-
+            jwtTransformer = (JWTTransformer) mappingClass.newInstance();
+            return className;
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             log.error("Error while loading the jwttransformer class: " + className, e);
         }
-        return  className;
+        return className;
     }
 
     public static MapValue transformJWT(MapValue claims) {
-        MapValue scopes = jwtTransformer.transformJWT(claims);
-        return scopes;
+        MapValue claimSet = jwtTransformer.transformJWT(claims);
+        return claimSet;
     }
 }

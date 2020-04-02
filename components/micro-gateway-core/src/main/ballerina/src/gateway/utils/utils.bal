@@ -879,8 +879,16 @@ function readMultipleJWTIssuers() {
                 },
                 jwtCache: jwtCache
             };
-            JwtAuthProvider jwtAuthProvider 
-                = new (jwtValidatorConfig, getDefaultBooleanValue(jwtIssuer[VALIDATE_SUBSCRIPTION], DEFAULT_VALIDATE_SUBSCRIPTION));
+            string className = "";
+            if(jwtIssuer.hasKey("className")){
+               className = getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
+            }
+            map<anydata> claims = {};
+            if(jwtIssuer.hasKey("claims")){
+               claims = <map<anydata>>jwtIssuer["claims"];
+            }
+            JwtAuthProvider jwtAuthProvider
+                = new (jwtValidatorConfig, getDefaultBooleanValue(jwtIssuer[VALIDATE_SUBSCRIPTION], DEFAULT_VALIDATE_SUBSCRIPTION), claims, className);
             JWTAuthHandler | JWTAuthHandlerWrapper jwtAuthHandler;
             if (isMetricsEnabled || isTracingEnabled) {
                 jwtAuthHandler = new JWTAuthHandlerWrapper(jwtAuthProvider);
@@ -907,8 +915,8 @@ function readMultipleJWTIssuers() {
             },
             jwtCache: jwtCache
         };
-        JwtAuthProvider jwtAuthProvider 
-            = new (jwtValidatorConfig, getConfigBooleanValue(JWT_INSTANCE_ID, VALIDATE_SUBSCRIPTION, DEFAULT_VALIDATE_SUBSCRIPTION));
+        JwtAuthProvider jwtAuthProvider
+            = new (jwtValidatorConfig, getConfigBooleanValue(JWT_INSTANCE_ID, VALIDATE_SUBSCRIPTION, DEFAULT_VALIDATE_SUBSCRIPTION), {}, "");
         JWTAuthHandler | JWTAuthHandlerWrapper jwtAuthHandler;
         if (isMetricsEnabled || isTracingEnabled) {
             jwtAuthHandler = new JWTAuthHandlerWrapper(jwtAuthProvider);

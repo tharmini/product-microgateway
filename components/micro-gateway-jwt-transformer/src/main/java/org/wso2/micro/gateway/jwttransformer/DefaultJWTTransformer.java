@@ -20,26 +20,25 @@ import org.ballerinalang.jvm.values.ArrayValueImpl;
 import org.ballerinalang.jvm.values.MapValue;
 
 /**
- * This file is for default Jwt transformer
+ * This class is for default Jwt transformer.
  */
 public class DefaultJWTTransformer implements JWTTransformer {
 
     @Override
-    public MapValue transformJWT(MapValue scopes) {
+    public MapValue transformJWT(MapValue jwtClaims) {
         String scope = "";
-        MapValue scopesValue = scopes;
-        int sizeOfScope = scopesValue.size();
-        String name = scopesValue.get("scope").getClass().getName();
-        if (scopesValue.containsKey("scope")) {
-         if (scopesValue.get("scope") instanceof ArrayValueImpl) {
-             for (int i = 0; i < ((ArrayValueImpl) scopesValue.get("scope")).size(); i++) {
-                 scope +=  ((ArrayValueImpl) scopesValue.get("scope")).getString(i) + " ";
-
-             }
-             scope = scope.trim();
-         }
-            scopesValue.put("scope", scope);
+        MapValue claimSet = jwtClaims;
+        int sizeOfClaims = claimSet.size();
+        String name = claimSet.get("scope").getClass().getName();
+        if (claimSet.containsKey("scope")) {
+            if (claimSet.get("scope") instanceof ArrayValueImpl) {
+                for (int i = 0; i < ((ArrayValueImpl) claimSet.get("scope")).size(); i++) {
+                    scope += ((ArrayValueImpl) claimSet.get("scope")).getString(i) + " ";
+                }
+                scope = scope.trim();
+            }
+            claimSet.put("scope", scope);
         }
-        return scopesValue;
+        return claimSet;
     }
 }
