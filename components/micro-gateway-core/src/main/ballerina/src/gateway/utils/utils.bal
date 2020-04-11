@@ -862,6 +862,8 @@ public function initAuthHandlers() {
 function readMultipleJWTIssuers() {
     map<anydata>[] | error jwtIssuers = map<anydata>[].constructFrom(config:getAsArray(JWT_INSTANCE_ID));
     if (jwtIssuers is map<anydata>[] && jwtIssuers.length() > 0) {
+        initiateJwtMap();
+
         printDebug(KEY_UTILS, "Found new multiple JWT issuer configs");
         string trustStorePath = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PATH, DEFAULT_TRUST_STORE_PATH);
         string trustStorePassword = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PASSWORD, DEFAULT_TRUST_STORE_PASSWORD);
@@ -879,16 +881,21 @@ function readMultipleJWTIssuers() {
                 },
                 jwtCache: jwtCache
             };
+            boolean classLoaded = false;
             string className = "";
-            if(jwtIssuer.hasKey("className")){
+            if(jwtIssuer.hasKey("claimMapperClassName")){
                className = getDefaultStringValue(jwtIssuer[ISSUER_CLASSNAME], DEFAULT_ISSUER_CLASSNAME);
+               classLoaded = loadMappingClass(className);
+               printDebug(classLoaded.toString(), "classLoaded**************************");
             }
-            map<anydata> claims = {};
+
+
+            map<anydata>[] | error claims = [];
             if(jwtIssuer.hasKey("claims")){
-               claims = <map<anydata>>jwtIssuer["claims"];
+                  claims = map<anydata>[].constructFrom((jwtIssuer["claims"]));
             }
             JwtAuthProvider jwtAuthProvider
-                = new (jwtValidatorConfig, getDefaultBooleanValue(jwtIssuer[VALIDATE_SUBSCRIPTION], DEFAULT_VALIDATE_SUBSCRIPTION), claims, className);
+                = new (jwtValidatorConfig, getDefaultBooleanValue(jwtIssuer[VALIDATE_SUBSCRIPTION], DEFAULT_VALIDATE_SUBSCRIPTION), claims, className, classLoaded);
             JWTAuthHandler | JWTAuthHandlerWrapper jwtAuthHandler;
             if (isMetricsEnabled || isTracingEnabled) {
                 jwtAuthHandler = new JWTAuthHandlerWrapper(jwtAuthProvider);
@@ -916,7 +923,7 @@ function readMultipleJWTIssuers() {
             jwtCache: jwtCache
         };
         JwtAuthProvider jwtAuthProvider
-            = new (jwtValidatorConfig, getConfigBooleanValue(JWT_INSTANCE_ID, VALIDATE_SUBSCRIPTION, DEFAULT_VALIDATE_SUBSCRIPTION), {}, "");
+            = new (jwtValidatorConfig, getConfigBooleanValue(JWT_INSTANCE_ID, VALIDATE_SUBSCRIPTION, DEFAULT_VALIDATE_SUBSCRIPTION), [] , "", false);
         JWTAuthHandler | JWTAuthHandlerWrapper jwtAuthHandler;
         if (isMetricsEnabled || isTracingEnabled) {
             jwtAuthHandler = new JWTAuthHandlerWrapper(jwtAuthProvider);
@@ -980,3 +987,5 @@ public function setResourceScopesToPrincipal(http:HttpResourceConfig httpResourc
         }
     }
 }
+
+

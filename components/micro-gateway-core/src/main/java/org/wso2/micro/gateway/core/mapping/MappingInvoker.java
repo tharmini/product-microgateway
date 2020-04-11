@@ -17,9 +17,13 @@
 package org.wso2.micro.gateway.core.mapping;
 
 import org.ballerinalang.jvm.values.MapValue;
+import org.ballerinalang.jvm.values.api.BString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wso2.micro.gateway.jwttransformer.JWTTransformer;
+import org.wso2.micro.gateway.jwttransformer.JWTValueTransformer;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -27,22 +31,35 @@ import org.wso2.micro.gateway.jwttransformer.JWTTransformer;
  */
 public class MappingInvoker {
 
-    private static final Logger log = LoggerFactory.getLogger("ballerina");
-    private static JWTTransformer jwtTransformer;
+    private static Map map;
 
-    public static String loadMappingClass(String className) {
+    private static JWTValueTransformer[] interceptorArray;
+    private static int index = 0;
+    private static final Logger log = LoggerFactory.getLogger("ballerina");
+    private static JWTValueTransformer jwtTransformer;
+
+    public static void initiateJwtMap() {
+        map = new HashMap<String,JWTValueTransformer>();
+    }
+
+    public static boolean loadMappingClass(String className) {
         try {
             Class mappingClass = MappingInvoker.class.getClassLoader().loadClass(className);
-            jwtTransformer = (JWTTransformer) mappingClass.newInstance();
-            return className;
+            jwtTransformer = (JWTValueTransformer) mappingClass.newInstance();
+            map.put(className,jwtTransformer);
+            return true;
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             log.error("Error while loading the jwttransformer class: " + className, e);
         }
-        return className;
+        return false;
     }
 
-    public static MapValue transformJWT(MapValue claims) {
+    public static MapValue transformJWTValue(MapValue claims, String className) {
+
+        jwtTransformer = (JWTValueTransformer) map.get(className);
+
         MapValue claimSet = jwtTransformer.transformJWT(claims);
         return claimSet;
     }
 }
+

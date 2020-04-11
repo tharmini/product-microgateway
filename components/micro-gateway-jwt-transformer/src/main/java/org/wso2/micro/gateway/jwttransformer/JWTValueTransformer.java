@@ -21,7 +21,7 @@ import org.ballerinalang.jvm.values.MapValue;
 /**
  * Defines the interface for writing the  jwt tranformation.
  */
-public interface JWTTransformer {
+public interface JWTValueTransformer {
 
     /**
      *  Transform the custom claims  into required format.
