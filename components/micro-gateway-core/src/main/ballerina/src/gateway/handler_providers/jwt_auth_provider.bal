@@ -74,19 +74,16 @@ public type JwtAuthProvider object {
                     (jwt:JwtPayload | error) payloadBody = getDecodedJWTPayload(jwtToken);
                      if (payloadBody is jwt:JwtPayload) {
                         printDebug(payloadBody.toString(), "payloadBody******************************");
-                         printDebug(self.jwtValidatorConfig.toString(), "self.jwtValidatorConfig*****************************");
+                        printDebug(self.jwtValidatorConfig.toString(), "self.jwtValidatorConfig*****************************");
                         string payloadissuer = payloadBody["iss"].toString();
                         if( self.jwtValidatorConfig["issuer"] ==  payloadissuer){
 
-                            printDebug(self.jwtValidatorConfig["issuer"].toString(), "self.jwtValidatorConfig******************************");
-                            printDebug(payloadissuer.toString(), "payloadissuer******************************");
                             var result = doMappingContext(invocationContext, self.className, self.claims, self.classLoaded);
                             if (result is auth:Error){
                                 return result;
                             }
                         }
                      }
-                     printDebug(invocationContext.toString(), "invocationContext6666666666******************************");
                     boolean isGRPC = invocationContext.attributes.hasKey(IS_GRPC);
                     //Start a new child span for the span.
                     int | error | () spanIdCache = startSpan(JWT_CACHE);
@@ -173,18 +170,18 @@ public function doMappingContext(runtime:InvocationContext invocationContext, st
     printDebug(invocationContext.toString(), "invocationContext**********************************");
     if (customClaims is map<any>) {
         if ( claims is map<anydata>[] && claims.length() > 0) {
-                foreach map<anydata> claim in claims {
-                    string remoteClaim = claim["remoteClaim"].toString();
-                    string localClaim = claim["localClaim"].toString();
-                    printDebug(remoteClaim.toString(), "remoteClaim**********************************");
-                    if (customClaims is map<anydata>) {
-                        if (customClaims.hasKey(remoteClaim) ) {
-                            customClaims[localClaim] = customClaims[remoteClaim];
-                            anydata removedElement = customClaims.remove(remoteClaim);
-                        }
-                     }
-                }
+            foreach map<anydata> claim in claims {
+                string remoteClaim = claim["remoteClaim"].toString();
+                string localClaim = claim["localClaim"].toString();
+                printDebug(remoteClaim.toString(), "remoteClaim**********************************");
+                if (customClaims is map<anydata>) {
+                    if (customClaims.hasKey(remoteClaim) ) {
+                        customClaims[localClaim] = customClaims[remoteClaim];
+                        anydata removedElement = customClaims.remove(remoteClaim);
+                    }
+                 }
             }
+        }
         if (className != "") {
             if(classLoaded){
                 printDebug(className.toString(), "className**********************************");
