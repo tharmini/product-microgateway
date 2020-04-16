@@ -83,6 +83,10 @@
             <version>${com.google.guava.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.json.wso2</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
@@ -162,7 +166,7 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib/dependencies/</outputDirectory>
                             <includeGroupIds>org.wso2.andes.wso2, org.wso2.securevault, org.wso2.am.microgw</includeGroupIds>
-                            <includeArtifactIds>andes-client, org.wso2.securevault, mgw-interceptor</includeArtifactIds>
+                            <includeArtifactIds>andes-client, org.wso2.securevault, mgw-interceptor, mgw-jwt-transformer</includeArtifactIds>
                         </configuration>
                     </execution>
                     <execution>

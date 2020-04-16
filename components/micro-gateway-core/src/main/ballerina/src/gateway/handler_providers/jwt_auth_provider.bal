@@ -17,30 +17,41 @@
 import ballerina/auth;
 import ballerina/jwt;
 import ballerina/runtime;
-
+import ballerina/stringutils;
 
 # Represents inbound JWT auth provider.
 #
 # + jwtValidatorConfig - JWT validator configurations
 # + inboundJwtAuthProvider - Reference to b7a inbound auth provider
 # + subscriptionValEnabled - Validate subscription
+# + claims - JWT claim set
+# + className - Transformation class Name
+# + classLoaded - Class loaded or not
+# + gatewayCache - the `APIGatewayCache instence`
 public type JwtAuthProvider object {
     *auth:InboundAuthProvider;
 
     public jwt:JwtValidatorConfig jwtValidatorConfig;
     public jwt:InboundJwtAuthProvider inboundJwtAuthProvider;
     public boolean subscriptionValEnabled;
+    public map<anydata>[] | error claims;
+    public string className;
+    public boolean classLoaded;
+    public APIGatewayCache gatewayCache = new;
 
     # Provides authentication based on the provided JWT token.
     #
     # + jwtValidatorConfig - JWT validator configurations
     # + subscriptionValEnabled - Validate subscription
-    public function __init(jwt:JwtValidatorConfig jwtValidatorConfig, boolean subscriptionValEnabled) {
+    public function __init(jwt:JwtValidatorConfig jwtValidatorConfig, boolean subscriptionValEnabled,
+        map<anydata>[] | error claims, string className, boolean classLoaded) {
         self.jwtValidatorConfig = jwtValidatorConfig;
         self.inboundJwtAuthProvider = new (jwtValidatorConfig);
         self.subscriptionValEnabled = subscriptionValEnabled;
+        self.claims = claims;
+        self.className = className;
+        self.classLoaded = classLoaded;
     }
-
 
     public function authenticate(string credential) returns @tainted (boolean | auth:Error) {
         //Start a span attaching to the system span.
@@ -53,7 +64,6 @@ public type JwtAuthProvider object {
                 setErrorMessageToInvocationContext(API_AUTH_INVALID_CREDENTIALS);
                 return handleVar;
             }
-
             boolean isBlacklisted = false;
             string? jti = "";
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
@@ -67,6 +77,28 @@ public type JwtAuthProvider object {
                     var cachedJwt = trap <jwt:CachedJwt>jwtCache.get(jwtToken);
                     //finishing span
                     finishSpan(JWT_CACHE, spanIdCache);
+                    var isJwtTokenCached = self.gatewayCache.retrieveClaimMappingCache(jwtToken);
+                    if (isJwtTokenCached is boolean) {
+                        printDebug(KEY_JWT_AUTH_PROVIDER, "Moddified claims in the cache");
+                     }
+                    else {
+                        printDebug(KEY_JWT_AUTH_PROVIDER, "Moddified claims is not in the cache");
+                        (jwt:JwtPayload | error) payloadBody = getDecodedJWTPayload(jwtToken);
+                        if (payloadBody is jwt:JwtPayload) {
+                            string payloadIssuer = payloadBody["iss"].toString();
+                            string payloadAudience = payloadBody["aud"].toString();
+                            if( self.jwtValidatorConfig[ISSUER] ==  payloadIssuer &&
+                                self.jwtValidatorConfig[AUDIENCE] ==  payloadAudience) {
+                                var result = doMappingContext(invocationContext, self.className, self.claims,
+                                    self.classLoaded);
+                                jwtToken = authContext?.authToken.toString();
+                                self.gatewayCache.addClaimMappingCache(jwtToken, true);
+                                if (result is auth:Error){
+                                    return result;
+                                }
+                            }
+                        }
+                    }
                     if (cachedJwt is jwt:CachedJwt) {
                         printDebug(KEY_JWT_AUTH_PROVIDER, "jwt found from the jwt cache");
                         jwt:JwtPayload jwtPayloadFromCache = cachedJwt.jwtPayload;
@@ -98,7 +130,7 @@ public type JwtAuthProvider object {
                             printDebug(KEY_JWT_AUTH_PROVIDER, "jti claim not found in the jwt");
                         }
                         return validateSubscriptions(jwtToken, cachedJwt.jwtPayload, self.subscriptionValEnabled, isGRPC);
-                    } 
+                    }
                     printDebug(KEY_JWT_AUTH_PROVIDER, "jwt not found in the jwt cache");
                     (jwt:JwtPayload | error) payload = getDecodedJWTPayload(jwtToken);
                     if (payload is jwt:JwtPayload) {
@@ -114,7 +146,7 @@ public type JwtAuthProvider object {
     }
 };
 
-public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, boolean subscriptionValEnabled, boolean isGRPC) 
+public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, boolean subscriptionValEnabled, boolean isGRPC)
         returns @tainted (boolean | auth:Error) {
     boolean subscriptionValidated = false;
     json subscribedAPIList = [];
@@ -133,11 +165,57 @@ public function validateSubscriptions(string jwtToken, jwt:JwtPayload payload, b
         if (subscriptionValidated || !subscriptionValEnabled || isGRPC) {
             printDebug(KEY_JWT_AUTH_PROVIDER, "Subscriptions validation passed.");
             return true;
-        } else { 
+        } else {
             setErrorMessageToInvocationContext(API_AUTH_FORBIDDEN);
             return prepareError("Subscriptions validation failed.");
         }
     }
     setErrorMessageToInvocationContext(API_AUTH_FORBIDDEN);
     return prepareError("Failed to decode the JWT.");
+}
+
+public function doMappingContext(runtime:InvocationContext invocationContext, string className,
+    map<anydata>[] | error claims, boolean classLoaded) returns @tainted (auth:Error)? {
+    map<any>? customClaims = invocationContext["principal"]["claims"];
+    if (customClaims is map<any>) {
+        if (claims is map<anydata>[] && claims.length() > 0) {
+            foreach map<anydata> claim in claims {
+                string remoteClaim = claim["remoteClaim"].toString();
+                string localClaim = claim["localClaim"].toString();
+                if (customClaims is map<anydata>) {
+                    if (customClaims.hasKey(remoteClaim)) {
+                        customClaims[localClaim] = customClaims[remoteClaim];
+                        anydata removedElement = customClaims.remove(remoteClaim);
+                    }
+                }
+            }
+        }
+        if (className != "" && classLoaded) {
+            map<any>? customClaimsEdited = transformJWTValue(customClaims, className);
+            if (customClaimsEdited is map<any>) {
+                customClaims = customClaimsEdited;
+            } else {
+                return prepareError("Error while loading the jwttransformer class: " + className);
+            }
+        }
+        if(customClaims["scope"].toString() != "") {
+            var result = putScopeValue(customClaims["scope"], invocationContext);
+            if (result is auth:Error) {
+                return result;
+            }
+        }
+     }
+}
+
+public function putScopeValue(any scope, runtime:InvocationContext invocationContext) returns @tainted (auth:Error)? {
+    if (scope is string && scope != "") {
+        string[]? scopes =  stringutils:split(scope.toString(), " ");
+        if (scopes is string[]) {
+            invocationContext.principal.scopes = scopes;
+        } else {
+            return prepareError("Scope cannot be change to string array format");
+        }
+    } else {
+        return prepareError("Scope is not a string format.");
+    }
 }
