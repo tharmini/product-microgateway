@@ -17,6 +17,8 @@
 import ballerina/http;
 import ballerina/runtime;
 import ballerina/stringutils;
+import ballerinax/java;
+
 
 # Representation of the mutual ssl handler
 #
@@ -45,12 +47,37 @@ public type MutualSSLHandler object {
             }
             // provided more generic error code to avoid security issues.
             setErrorMessageToInvocationContext(API_AUTH_INVALID_CREDENTIALS); 
-            return prepareAuthenticationError("Failed to authenticate with MutualSSL handler");            
+            return prepareAuthenticationError("Failed to authenticate with MutualSSL handler");
+
+
         }
 
+        string trustStorePath = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PATH, DEFAULT_TRUST_STORE_PATH);
+        string trustStorePassword = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PASSWORD, DEFAULT_TRUST_STORE_PASSWORD);
+
+
+
+
         if (req.mutualSslHandshake[STATUS] == PASSED) {
+            string? cert = req.mutualSslHandshake["base64EncodedCert"];
+            printDebug("decoded cert ****************wwwwwwwww", cert.toString());
+            if (req.hasHeader("base64EncodedCert")) {
+                string headerValue = req.getHeader("base64EncodedCert").toLowerAscii();
+                if(headerValue != "") {
+
+                    boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
+                    //boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
+                    //printDebug("decoded cert ****************", decodedCert.toString());
+                }
+            }
+            else{
+                handle|error serial_number = getSerialNumber(cert.toString());
+
+            }
+            printDebug(req.toString(), "req******************");
             printDebug(KEY_AUTHN_FILTER, "MutualSSL handshake status: PASSED");
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
+            printDebug(invocationContext.toString(), "invocationContext***************");
             doMTSLFilterRequest(req, invocationContext); 
         }
         return true;
@@ -73,3 +100,41 @@ function doMTSLFilterRequest(http:Request request, runtime:InvocationContext con
     invocationContext.attributes[KEY_TYPE_ATTR] = authenticationContext.keyType;
     context.attributes[AUTHENTICATION_CONTEXT] = authenticationContext;
 }
+
+
+public function getcert(string cert,string trustStorePath,string trustStorePassword) returns boolean|error {
+    handle cert1 = java:fromString(cert);
+    handle trustStorePath1 = java:fromString(trustStorePath);
+    handle trustStorePassword1 = java:fromString(trustStorePassword);
+    boolean|error certt = jgetcert(cert1,trustStorePath1,trustStorePassword1);
+    return certt;
+}
+
+function jgetcert(handle cert, handle trustStorePath,handle trustStorePassword) returns boolean|error = @java:Method {
+    name: "invokegetcert",
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+} external;
+
+public function getSerialNumber(string cert) returns handle|error{
+    handle cert1 = java:fromString(cert);
+    handle|error serial_number = jgetSerialNumber(cert1);
+    return serial_number;
+}
+
+public function jgetSerialNumber(handle cert) returns handle|error = @java:Method {
+    name: "getSerialNumberOfCert",
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+} external;
+
+public function isExistCert(string cert,string trustStorePath,string trustStorePassword) returns boolean|error {
+    handle cert1 = java:fromString(cert);
+    handle trustStorePath1 = java:fromString(trustStorePath);
+    handle trustStorePassword1 = java:fromString(trustStorePassword);
+    boolean|error certt = jisExistCert(cert1,trustStorePath1,trustStorePassword1);
+    return certt;
+}
+
+function jisExistCert(handle cert, handle trustStorePath,handle trustStorePassword) returns boolean|error = @java:Method {
+    name: "isExistCert",
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+} external;
