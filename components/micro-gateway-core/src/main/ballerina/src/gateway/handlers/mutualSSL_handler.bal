@@ -62,11 +62,22 @@ public type MutualSSLHandler object {
             string? cert = req.mutualSslHandshake["base64EncodedCert"];
             printDebug("decoded cert ****************wwwwwwwww", cert.toString());
             if (req.hasHeader("base64EncodedCert")) {
-                string headerValue = req.getHeader("base64EncodedCert").toLowerAscii();
+                string headerValue = req.getHeader("base64EncodedCert");
+                string headerValue1 = req.getHeader("base64EncodedCert").toLowerAscii();
+                printDebug("headerValue ****************", headerValue.toString());
+                printDebug("headerValue1 ****************", headerValue1.toString());
+
                 if(headerValue != "") {
 
-                    boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
-                    //boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
+                    //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
+                    boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
+                    //printDebug("decoded cert ****************", decodedCert.toString());
+                }
+
+                if(headerValue1 != "") {
+
+                    //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
+                    boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
                     //printDebug("decoded cert ****************", decodedCert.toString());
                 }
             }
@@ -136,5 +147,5 @@ public function isExistCert(string cert,string trustStorePath,string trustStoreP
 
 function jisExistCert(handle cert, handle trustStorePath,handle trustStorePassword) returns boolean|error = @java:Method {
     name: "isExistCert",
-    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+    class: "org.wso2.micro.gateway.core.ssl.MutualSsl"
 } external;
