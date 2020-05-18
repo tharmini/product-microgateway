@@ -36,6 +36,7 @@ public class OpenAPIConstants {
     public static final String TRANSPORT_HTTP = "http";
     public static final String TRANSPORT_HTTPS = "https";
     public static final String MANDATORY = "mandatory";
+    public static final String CERTIFICATE_INFORMATION = "certificateInformation";
     public static final String OPTIONAL = "optional";
     public static final String ENABLED = "enabled";
     public static final String DISABLED = "Disabled";

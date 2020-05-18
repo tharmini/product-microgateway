@@ -16,6 +16,7 @@
 package org.wso2.apimgt.gateway.cli.model.rest.ext;
 
 import org.wso2.apimgt.gateway.cli.model.config.ApplicationSecurity;
+import org.wso2.apimgt.gateway.cli.model.config.MutualSslCertificate;
 import org.wso2.apimgt.gateway.cli.model.mgwcodegen.MgwEndpointConfigDTO;
 import org.wso2.apimgt.gateway.cli.model.rest.APIDetailedDTO;
 
@@ -37,7 +38,7 @@ public class ExtendedAPI extends APIDetailedDTO {
     //support apim application level security
     private ApplicationSecurity applicationSecurity = null;
     //support apim transport level security
-    private String mutualSSL = null;
+    private MutualSslCertificate mutualSSL = null;
 
     public MgwEndpointConfigDTO getEndpointConfigRepresentation() {
         return endpointConfigRepresentation;
@@ -87,11 +88,11 @@ public class ExtendedAPI extends APIDetailedDTO {
         return applicationSecurity;
     }
 
-    public String getMutualSSL() {
+    public MutualSslCertificate getMutualSSL() {
         return mutualSSL;
     }
 
-    public void setMutualSSL(String mutualSSL) {
+    public void setMutualSSL(MutualSslCertificate mutualSSL) {
         this.mutualSSL = mutualSSL;
     }
 

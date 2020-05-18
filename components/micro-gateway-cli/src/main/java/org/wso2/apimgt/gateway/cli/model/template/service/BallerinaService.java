@@ -27,10 +27,7 @@ import org.wso2.apimgt.gateway.cli.constants.OpenAPIConstants;
 import org.wso2.apimgt.gateway.cli.exception.BallerinaServiceGenException;
 import org.wso2.apimgt.gateway.cli.exception.CLICompileTimeException;
 import org.wso2.apimgt.gateway.cli.exception.CLIRuntimeException;
-import org.wso2.apimgt.gateway.cli.model.config.APIKey;
-import org.wso2.apimgt.gateway.cli.model.config.ApplicationSecurity;
-import org.wso2.apimgt.gateway.cli.model.config.Config;
-import org.wso2.apimgt.gateway.cli.model.config.ContainerConfig;
+import org.wso2.apimgt.gateway.cli.model.config.*;
 import org.wso2.apimgt.gateway.cli.model.mgwcodegen.MgwEndpointConfigDTO;
 import org.wso2.apimgt.gateway.cli.model.rest.ext.ExtendedAPI;
 import org.wso2.apimgt.gateway.cli.utils.CmdUtils;
@@ -85,7 +82,7 @@ public class BallerinaService implements BallerinaOpenAPIObject<BallerinaService
     private boolean isMutualSSL = false;
     //if mutual ssl is enabled, verifying client is mandatory or optional
     @SuppressFBWarnings(value = "URF_UNREAD_FIELD")
-    private String mutualSSLClientVerification;
+    private MutualSslCertificate mutualSSLClientVerification;
 
     @SuppressFBWarnings(value = "URF_UNREAD_FIELD")
     private boolean applicationSecurityOptional;

@@ -62,11 +62,7 @@ public type MutualSSLHandler object {
             string? cert = req.mutualSslHandshake["base64EncodedCert"];
             printDebug("decoded cert ****************wwwwwwwww", cert.toString());
             if (req.hasHeader("base64EncodedCert")) {
-                string headerValue = req.getHeader("base64EncodedCert");
-                string headerValue1 = req.getHeader("base64EncodedCert").toLowerAscii();
-                printDebug("headerValue ****************", headerValue.toString());
-                printDebug("headerValue1 ****************", headerValue1.toString());
-
+                string headerValue = req.getHeader("base64EncodedCert").toLowerAscii();
                 if(headerValue != "") {
 
                     //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
@@ -74,12 +70,6 @@ public type MutualSSLHandler object {
                     //printDebug("decoded cert ****************", decodedCert.toString());
                 }
 
-                if(headerValue1 != "") {
-
-                    //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
-                    boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
-                    //printDebug("decoded cert ****************", decodedCert.toString());
-                }
             }
             else{
                 handle|error serial_number = getSerialNumber(cert.toString());
