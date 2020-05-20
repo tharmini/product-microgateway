@@ -123,6 +123,8 @@ returns boolean {
     }
     // set api's mutual ssl client verify configuration
     setMutualSSL(context.getServiceName());
+    // set api's mutual ssl certificate information
+    setMutualSSLcertificateInformation(context.getServiceName());
 
     string providerId = getAuthenticationProviderType(authHeader);
     printDebug(KEY_PRE_AUTHN_FILTER, "Provider Id for authentication handler : " + providerId);

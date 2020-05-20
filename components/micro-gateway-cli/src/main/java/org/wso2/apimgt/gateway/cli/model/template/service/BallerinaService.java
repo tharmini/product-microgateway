@@ -82,7 +82,11 @@ public class BallerinaService implements BallerinaOpenAPIObject<BallerinaService
     private boolean isMutualSSL = false;
     //if mutual ssl is enabled, verifying client is mandatory or optional
     @SuppressFBWarnings(value = "URF_UNREAD_FIELD")
-    private MutualSslCertificate mutualSSLClientVerification;
+    private boolean mutualSSLClientVerification;
+    //mutual ssl serial number
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD")
+    private String mutualSSLcertificateInformation;
+
 
     @SuppressFBWarnings(value = "URF_UNREAD_FIELD")
     private boolean applicationSecurityOptional;
@@ -141,7 +145,8 @@ public class BallerinaService implements BallerinaOpenAPIObject<BallerinaService
                 this.authProviders.contains(OpenAPIConstants.APISecurity.apikey.name()));
         if (api.getMutualSSL() != null) {
             this.isMutualSSL = true;
-            this.mutualSSLClientVerification = api.getMutualSSL();
+            this.mutualSSLClientVerification = api.getMutualSSL().isMandatory();
+            this.mutualSSLcertificateInformation = api.getMutualSSL().getCertificateInformation();
         }
         if (appSecurity != null && appSecurity.isOptional() != null) {
             this.applicationSecurityOptional = appSecurity.isOptional();

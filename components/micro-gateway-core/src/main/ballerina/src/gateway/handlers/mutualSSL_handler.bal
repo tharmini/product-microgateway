@@ -39,8 +39,9 @@ public type MutualSSLHandler object {
     # + return - Returns `true` if authenticated successfully. Else, returns `false`
     # or the `AuthenticationError` in case of an error.
     public function process(http:Request req) returns boolean | http:AuthenticationError {
-        string|error mutualSSLVerifyClient = getMutualSSL();
-        if (mutualSSLVerifyClient is string && stringutils:equalsIgnoreCase(MANDATORY, mutualSSLVerifyClient) 
+        boolean | error mutualSSLVerifyClient = getMutualSSL();
+        printDebug("mutualSSLVerifyClient************",mutualSSLVerifyClient.toString());
+        if (mutualSSLVerifyClient is boolean && mutualSSLVerifyClient
                 && req.mutualSslHandshake[STATUS] != PASSED ) {
             if (req.mutualSslHandshake[STATUS] == FAILED) {
                 printDebug(KEY_AUTHN_FILTER, "MutualSSL handshake status: FAILED");
@@ -51,29 +52,38 @@ public type MutualSSLHandler object {
 
 
         }
-
         string trustStorePath = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PATH, DEFAULT_TRUST_STORE_PATH);
         string trustStorePassword = getConfigValue(LISTENER_CONF_INSTANCE_ID, TRUST_STORE_PASSWORD, DEFAULT_TRUST_STORE_PASSWORD);
-
-
-
-
         if (req.mutualSslHandshake[STATUS] == PASSED) {
             string? cert = req.mutualSslHandshake["base64EncodedCert"];
             printDebug("decoded cert ****************wwwwwwwww", cert.toString());
             if (req.hasHeader("base64EncodedCert")) {
-                string headerValue = req.getHeader("base64EncodedCert").toLowerAscii();
+                string headerValue = req.getHeader("base64EncodedCert");
                 if(headerValue != "") {
 
                     //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
+                    printDebug("decoded cert *************ddfddddssss***wwwwwwwww", cert.toString());
                     boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
                     //printDebug("decoded cert ****************", decodedCert.toString());
+                    if(isCertexistInTrustStore is boolean && !isCertexistInTrustStore  ){
+                        return false;
+                    }
                 }
-
             }
             else{
                 handle|error serial_number = getSerialNumber(cert.toString());
+                if(serial_number is handle)
+                {
+                    string serialNumber = serial_number.toString();
+                    string | error MutualSSLcertificateInformation = getMutualSSLcertificateInformation();
+                    printDebug("MutualSSLcertificateInformationfddddssss***wwwwwwwww", MutualSSLcertificateInformation.toString());
+                    if(!(MutualSSLcertificateInformation is string && stringutils:equalsIgnoreCase(MutualSSLcertificateInformation,serialNumber)))
+                    {
+                        printDebug("MutualSSLcertificateInformation***is false*******", MutualSSLcertificateInformation.toString());
+                        return false;
 
+                    }
+                }
             }
             printDebug(req.toString(), "req******************");
             printDebug(KEY_AUTHN_FILTER, "MutualSSL handshake status: PASSED");

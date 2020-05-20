@@ -676,24 +676,59 @@ public function getAPIKeysforResource(string serviceName, string resourceName) r
 }
 
 public function setMutualSSL(string serviceName) {
-    string mutualSSL = getConfigValue(MTSL_CONF_INSTANCE_ID, MTSL_CONF_SSLVERIFYCLIENT, DEFAULT_SSL_VERIFY_CLIENT);
+   // string mutualSSL = getConfigValue(MTSL_CONF_INSTANCE_ID, MTSL_CONF_SSLVERIFYCLIENT, DEFAULT_SSL_VERIFY_CLIENT);
+    boolean mutualSSL = false;
     json | error securityMutualSSL = getSecurityForService(serviceName, MTSL);
     if (securityMutualSSL is json) {
-        mutualSSL = <string> securityMutualSSL;
+        mutualSSL = <boolean> securityMutualSSL;
     }
     runtime:InvocationContext invocationContext = runtime:getInvocationContext();
     invocationContext.attributes[MTSL] = mutualSSL;
 }
 
-public function getMutualSSL() returns string | error {
+public function getMutualSSL() returns boolean | error {
     runtime:InvocationContext invocationContext = runtime:getInvocationContext();
     if (invocationContext.attributes.hasKey(MTSL)) {
-        return <string>invocationContext.attributes[MTSL];
+        io:println(typeof(invocationContext.attributes[MTSL]));
+        printDebug("invocationContext*******",invocationContext.toString());
+        printDebug("invocationContext.attributes[MTSL]t*******",invocationContext.attributes[MTSL].toString());
+        return <boolean>invocationContext.attributes[MTSL];
     } else {
         printError(KEY_UTILS, "MutualSSL is missing in authentication context");
         return error("MutualSSL is missing in authentication context");
     }
 }
+
+public function setMutualSSLcertificateInformation(string serviceName) {
+   // string mutualSSL = getConfigValue(MTSL_CONF_INSTANCE_ID, MTSL_CONF_SSLVERIFYCLIENT, DEFAULT_SSL_VERIFY_CLIENT);
+    string mutualSSLcertificateInformation = " ";
+    printDebug("mutualSSLcertificateInformation*******nweewwwwwwwwww",mutualSSLcertificateInformation.toString());
+    json | error securityMutualSSL = getSecurityForService(serviceName, MTSLCI);
+    if (securityMutualSSL is json) {
+
+        mutualSSLcertificateInformation = <string> securityMutualSSL;
+        printDebug("mutualSSLcertificateInformation******wwwwwwwwww",mutualSSLcertificateInformation.toString());
+    }
+    runtime:InvocationContext invocationContext = runtime:getInvocationContext();
+    invocationContext.attributes[MTSLCI] = mutualSSLcertificateInformation;
+    printDebug("invocationContext******wwwwwwwwww",invocationContext.toString());
+}
+
+public function getMutualSSLcertificateInformation() returns string | error {
+    runtime:InvocationContext invocationContext = runtime:getInvocationContext();
+    printDebug("invocationContext****fffggfgggfff***",invocationContext.toString());
+    if (invocationContext.attributes.hasKey(MTSLCI)) {
+        io:println(typeof(invocationContext.attributes[MTSLCI]));
+        printDebug("invocationContext*******",invocationContext.toString());
+        printDebug("invocationContext.attributes[mutualSSLcertificateInformation]t*******",invocationContext.attributes[MTSLCI].toString());
+        return <string>invocationContext.attributes[MTSLCI];
+    } else {
+        printError(KEY_UTILS, "mutualSSLcertificateInformation is missing in authentication context");
+        return error("mutualSSLcertificateInformation is missing in authentication context");
+    }
+}
+
+
 
 public function isAppSecurityOptionalforResource(string serviceName, string resourceName) returns boolean {
     boolean appSecurityOptional = false;

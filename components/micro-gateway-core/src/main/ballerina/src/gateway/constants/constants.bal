@@ -250,6 +250,9 @@ public const string MAX_ENTITY_BODY_SIZE = "maxEntityBodySize";
 public const string FILTERS = "filters";
 
 public const string MTSL = "mutualSSL";
+public const string MTSLCI = "mutualSSLcertificateInformation";
+
+
 public const string MTSL_CONF_INSTANCE_ID = "mutualSSLConfig";
 public const string MTSL_CONF_PROTOCOL_NAME = "protocolName";
 public const string MTSL_CONF_PROTOCOL_VERSIONS = "protocolVersions";

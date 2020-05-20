@@ -77,7 +77,8 @@ import wso2/gateway;
     authProviders: [{{#authProviders}}"{{.}}"{{#unless @last}},{{/unless}}{{/authProviders}}],
     security: {
             "apikey":[{{#apiKeys}} { "in": "{{in}}", "name": "{{name}}" } {{#unless @last}},{{/unless}}{{/apiKeys}}],
-            "mutualSSL": "{{mutualSSLClientVerification}}",
+            "mutualSSL": {{mutualSSLClientVerification}},
+            "mutualSSLcertificateInformation": "{{mutualSSLcertificateInformation}}",
             "applicationSecurityOptional": {{applicationSecurityOptional}}
         }
 }
