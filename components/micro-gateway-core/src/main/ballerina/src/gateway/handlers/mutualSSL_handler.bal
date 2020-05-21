@@ -59,33 +59,31 @@ public type MutualSSLHandler object {
             printDebug("decoded cert ****************wwwwwwwww", cert.toString());
             if (req.hasHeader("base64EncodedCert")) {
                 string headerValue = req.getHeader("base64EncodedCert");
-                if(headerValue != "") {
+                if(headerValue != "" && mutualSSLVerifyClient is boolean &&  mutualSSLVerifyClient) {
 
                     //boolean|error decodedCert =  getcert(cert.toString(),trustStorePath.toString(),trustStorePassword.toString());
                     printDebug("decoded cert *************ddfddddssss***wwwwwwwww", cert.toString());
                     boolean|error isCertexistInTrustStore =  isExistCert(headerValue,trustStorePath.toString(),trustStorePassword.toString());
-                    //printDebug("decoded cert ****************", decodedCert.toString());
                     if(isCertexistInTrustStore is boolean && !isCertexistInTrustStore  ){
+                        printDebug(KEY_AUTHN_FILTER,"Mutual SSL authentication failure. API is not associated with the certificate");
                         return false;
                     }
                 }
-            }
-            else{
+            } else {
                 handle|error serial_number = getSerialNumber(cert.toString());
-                if(serial_number is handle)
+                if(serial_number is handle && mutualSSLVerifyClient is boolean &&  mutualSSLVerifyClient)
                 {
                     string serialNumber = serial_number.toString();
                     string | error MutualSSLcertificateInformation = getMutualSSLcertificateInformation();
                     printDebug("MutualSSLcertificateInformationfddddssss***wwwwwwwww", MutualSSLcertificateInformation.toString());
                     if(!(MutualSSLcertificateInformation is string && stringutils:equalsIgnoreCase(MutualSSLcertificateInformation,serialNumber)))
                     {
-                        printDebug("MutualSSLcertificateInformation***is false*******", MutualSSLcertificateInformation.toString());
+                        printDebug(KEY_AUTHN_FILTER,"Mutual SSL authentication failure. API is not associated with the certificate");
                         return false;
 
                     }
                 }
             }
-            printDebug(req.toString(), "req******************");
             printDebug(KEY_AUTHN_FILTER, "MutualSSL handshake status: PASSED");
             runtime:InvocationContext invocationContext = runtime:getInvocationContext();
             printDebug(invocationContext.toString(), "invocationContext***************");
@@ -123,7 +121,7 @@ public function getcert(string cert,string trustStorePath,string trustStorePassw
 
 function jgetcert(handle cert, handle trustStorePath,handle trustStorePassword) returns boolean|error = @java:Method {
     name: "invokegetcert",
-    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslRequestInvoker"
 } external;
 
 public function getSerialNumber(string cert) returns handle|error{
@@ -134,7 +132,7 @@ public function getSerialNumber(string cert) returns handle|error{
 
 public function jgetSerialNumber(handle cert) returns handle|error = @java:Method {
     name: "getSerialNumberOfCert",
-    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslInvoker"
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslRequestInvoker"
 } external;
 
 public function isExistCert(string cert,string trustStorePath,string trustStorePassword) returns boolean|error {
@@ -147,5 +145,5 @@ public function isExistCert(string cert,string trustStorePath,string trustStoreP
 
 function jisExistCert(handle cert, handle trustStorePath,handle trustStorePassword) returns boolean|error = @java:Method {
     name: "isExistCert",
-    class: "org.wso2.micro.gateway.core.ssl.MutualSsl"
+    class: "org.wso2.micro.gateway.core.mutualssl.MutualsslHeaderInvoker"
 } external;

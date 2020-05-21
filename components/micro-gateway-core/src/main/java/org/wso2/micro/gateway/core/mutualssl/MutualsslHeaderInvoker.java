@@ -1,4 +1,4 @@
-package org.wso2.micro.gateway.core.ssl;
+package org.wso2.micro.gateway.core.mutualssl;
 
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateFactory;
 
 
-public class MutualSsl {
+public class MutualsslHeaderInvoker {
     private static final Logger log = LoggerFactory.getLogger("ballerina");
     public static FileInputStream localTrustStoreStream;
     public static boolean isExistCert(String base64EncodedCertificate, String trustStorePath, String trustStorePassword) throws IOException, KeyStoreException, java.security.cert.CertificateException, NoSuchAlgorithmException {

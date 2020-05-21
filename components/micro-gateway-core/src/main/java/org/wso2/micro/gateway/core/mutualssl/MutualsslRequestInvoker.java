@@ -16,7 +16,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 
-public  class MutualsslInvoker {
+public  class MutualsslRequestInvoker {
     private String trustStorePath;
     private String trustStorePassword;
     public static FileInputStream localTrustStoreStream;
@@ -66,7 +66,6 @@ public  class MutualsslInvoker {
 
     public static BigInteger getSerialNumberOfCert(String cert) throws CertificateException {
         byte[] decoded = Base64.getDecoder().decode(cert);
-
         X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                 .generateCertificate(new ByteArrayInputStream(decoded));
 
