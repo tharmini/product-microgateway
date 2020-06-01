@@ -4,7 +4,7 @@ public function startupExtension() {
     loadDataToMemory();
 }
 
-function LoadDataToMemory() = @java:Method {
+function loadDataToMemory() = @java:Method {
     name: "readDataToMemory",
     class: "org.wso2.apimgt.gateway.cli.utils.storeDetails"
 }
