@@ -1,47 +1,43 @@
-package org.wso2.apimgt.gateway.cli.utils;
+package org.wso2.apimgt.gateway.cli.startup;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.apimgt.gateway.cli.constants.RESTServiceConstants;
+import org.wso2.apimgt.gateway.cli.utils.RESTAPIUtils;
 
-
-import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-public class storeDetails {
+/**
+ *  This class is to load the response get by public Petstore API against id into memory.
+ */
+public class StoreResponse {
     private static final Logger log = LoggerFactory.getLogger("ballerina");
     private static Map<Integer, String> responseHashMap = new HashMap<>();
+
     public static void readDataToMemory() {
-
         URL url;
-        HttpsURLConnection urlConn = null;
+        HttpURLConnection urlConn = null;
         try {
-            for (int i = 1; i <3 ; i++) {
-                String urlStr = "https://localhost:9095/v2/pet/1";
+            for (int i = 2; i < 3; i++) {
+                String urlStr = "https://petstore.swagger.io/v2/pet/" + i;
                 url = new URL(urlStr);
-
-                urlConn = (HttpsURLConnection) url.openConnection();
+                urlConn = (HttpURLConnection) url.openConnection();
                 urlConn.setDoOutput(true);
                 urlConn.setRequestMethod(RESTServiceConstants.GET);
                 int responseCode = urlConn.getResponseCode();
                 log.debug("Response code: {}", responseCode);
-
                 if (responseCode == 200) {
-                    ObjectMapper mapper = new ObjectMapper();
                     String responseStr = RESTAPIUtils.getResponseString(urlConn.getInputStream());
                     responseHashMap.put(i,responseStr);
                     log.trace("Response body: {}", responseStr);
-                    // handle response
                 } else {
                     throw new Exception("Error occurred " + responseCode);
                 }
             }
-
         } catch (IOException e) {
 
             // handle exception
@@ -52,8 +48,5 @@ public class storeDetails {
                 urlConn.disconnect();
             }
         }
-
     }
 }
-
-
